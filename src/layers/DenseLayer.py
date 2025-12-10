@@ -30,6 +30,9 @@ class DenseLayer(Layer):
     self.grads["dW"] = np.zeros(W_shape)
     self.grads["db"] = np.zeros((self.output_dim, 1))
     
+    # return the input dimension of for the next layer
+    return self.output_dim
+    
   def forward_pass(self, A_prev):
     Z = np.matmul(self.params["W"], A_prev) + np.matmul(self.params["b"], np.ones((1, A_prev.shape[1])))
     A = self.activation_fnc(Z)
