@@ -3,7 +3,7 @@ from src.optimizers import Optimizer
 from src.layers import Layer
 
 class Momentum(Optimizer):
-  def __init__(self, b: float):
+  def __init__(self, b: float = 0.9):
     self.b = b
     self.m = {}
     
@@ -19,6 +19,7 @@ class Momentum(Optimizer):
         old_momentum = self.m.get(momentum_key, np.zeros_like(layer.params[key]))
         
         momentum = self.b * old_momentum + (1 - self.b) * layer.grads[f"d{key}"]
+        
         layer.params[key] -= learning_rate * momentum
         
         self.m[momentum_key] = momentum

@@ -3,7 +3,7 @@ from src.optimizers import Optimizer
 import numpy as np
 
 class Adam(Optimizer):
-  def __init__(self, b, g):
+  def __init__(self, b: float = 0.9, g: float = 0.999):
     self.b = b
     self.g = g
     self.eps = 1e-10

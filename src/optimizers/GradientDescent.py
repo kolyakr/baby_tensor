@@ -2,7 +2,7 @@ from src.optimizers import Optimizer
 from src.layers import Layer
 
 class GradientDescent(Optimizer):
-  def update(
+  def update_layers(
     self,
     layers: list[Layer],
     learning_rate: float

@@ -52,6 +52,8 @@ class DenseLayer(Layer):
     dL_dW = np.matmul(dL_dZ, self.cache["A_prev"].transpose())
     dL_db = dL_dZ
     
+    dL_db = np.sum(dL_db, axis=1, keepdims=True) # from broadcasted to normal bias size
+    
     self.grads["dW"] = dL_dW
     self.grads["db"] = dL_db
     

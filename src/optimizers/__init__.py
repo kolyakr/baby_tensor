@@ -8,10 +8,10 @@ OptimizerType = Literal["gd", "momentum", "adam"]
 
 def get_optimizer(name: OptimizerType):
   if(name == "gd"):
-    return GradientDescent
+    return GradientDescent()
   if(name == "momentum"):
-    return Momentum
+    return Momentum()
   if(name == "adam"):
-    return Adam
+    return Adam()
   else:
     return ValueError(f"Optimizer '{name}' does not exist")
