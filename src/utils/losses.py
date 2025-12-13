@@ -37,7 +37,7 @@ def mse_derivative(y_hat: np.ndarray, y_true: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Gradient vector.
     """
-    return 2 * (y_hat - y_true) 
+    return 2 * (y_hat - y_true) / len(y_hat)
 
 def binary_cross_entropy(y_hat: np.ndarray, y_true: np.ndarray) -> float:
     """
@@ -77,7 +77,7 @@ def binary_cross_entropy_derivative(y_hat: np.ndarray, y_true: np.ndarray) -> np
     """
     epsilon = 1e-15
     y_hat = np.clip(y_hat, epsilon, 1 - epsilon)
-    return (-(y_true / y_hat) + ((1 - y_true) / (1 - y_hat)))
+    return (-(y_true / y_hat) + ((1 - y_true) / (1 - y_hat))) / len(y_hat)
 
 def categorical_cross_entropy(y_hat: np.ndarray, y_true: np.ndarray) -> float:
     """

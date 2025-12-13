@@ -25,32 +25,46 @@ class ConvolutionalLayer(Layer):
     self.padding = padding
     self.dilation = dilation
     
-  def initialize_parameters(self, input_dim, seed = 0):
+  def initialize_parameters(self, input_shape: tuple, seed = 0):
+    np.random.seed(seed)
+    
+    # input shape: (c, h, w)
+    input_c, input_h, input_w = input_shape
     
     self.params["W"] = np.zeros((
       self.output_channels_dim,
-      input_dim, 
+      input_c, 
       self.kernel_size[0], 
       self.kernel_size[1]
     ))
     self.grads["dW"] = np.zeros((
       self.output_channels_dim,
-      input_dim,
+      input_c,
       self.kernel_size[0], 
       self.kernel_size[1]
     ))
     
     self.params["b"] = np.zeros(self.output_channels_dim)
-    self.grads["db"] = np.zeros((1, self.output_channels_dim))
+    self.grads["db"] = np.zeros(self.output_channels_dim)
     
     init_name = "he" if self.activation_name == "relu" else "xavier"
     initialize = get_initialization(init_name)
     
     for i in range(self.output_channels_dim):
-      for j in range(input_dim):
+      for j in range(input_c):
         self.params["W"][i][j] = initialize(self.kernel_size)
+        
+    # computing shape of channels
+    
+    eff_kernel_size = (
+      self.kernel_size[0] + (self.kernel_size[0] - 1) * (self.dilation - 1),
+      self.kernel_size[1] + (self.kernel_size[1] - 1) * (self.dilation - 1)
+    )
+    
+    output_h = int(np.floor((input_h - eff_kernel_size[0] + 2 * self.padding) / self.stride)) + 1
+    output_w = int(np.floor((input_w - eff_kernel_size[1] + 2 * self.padding) / self.stride)) + 1 
       
-    return self.output_channels_dim
+    return (self.output_channels_dim, output_h, output_w)
   
   def forward_pass(self, A_prev):
     # A_prev.shape = (batch, channels, height, width)
@@ -176,7 +190,3 @@ class ConvolutionalLayer(Layer):
                                     dA_prev[b, in_c, target_in_x, target_in_y] += dZ_val * W_val
 
     return dA_prev
-              
-    
-    
-    

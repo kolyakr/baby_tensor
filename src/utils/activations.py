@@ -79,7 +79,12 @@ def softmax(z: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Probabilities, same shape as z, rows sum to 1.
     """
-    exp_z = np.exp(z)
+    
+    z_max = np.max(z, axis=0, keepdims=0)
+    
+    z_stable = z - z_max
+    
+    exp_z = np.exp(z_stable)
     return exp_z / np.sum(exp_z, axis=0)
 
 def linear(z: np.ndarray) -> np.ndarray:

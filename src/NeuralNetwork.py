@@ -16,7 +16,7 @@ class NeuralNetwork:
     self.optimizer = get_optimizer(optimizer_type)
     self.seed = seed
     
-  def build(self, input_dim: int):
+  def build(self, input_dim):
     temp_input_dim = input_dim
     
     for layer in self.layers:
@@ -49,7 +49,12 @@ class NeuralNetwork:
     learning_rate: int = 0.01
   ):
     
-    n = X_train.shape[1]
+    if len(X_train.shape) == 4:
+      batch_axis = 0
+    else:
+      batch_axis = 1
+    
+    n = X_train.shape[batch_axis]
     idx = range(n)
     loss_fnc, _ = get_loss(self.loss_type)
     
@@ -61,7 +66,11 @@ class NeuralNetwork:
         end_index = start_idx + batch_size
         batch_idx = shuffled_idx[start_idx:end_index]
         
-        X_train_batch = X_train[:, batch_idx]
+        if batch_axis == 1:
+          X_train_batch = X_train[:, batch_idx]
+        else:
+          X_train_batch = X_train[batch_idx, :, :, :]
+          
         y_train_batch = y_train[:, batch_idx]
         
         y_hat = self.forward_pass(X_train_batch)

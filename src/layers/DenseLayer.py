@@ -43,7 +43,12 @@ class DenseLayer(Layer):
     return A
     
   def backward_pass(self, dA):
-    dL_dZ = self.activation_derivative(self.cache["Z"]) * dA
+    
+    if self.activation_derivative is None:
+      dL_dZ = dA
+    else:    
+      dL_dZ = self.activation_derivative(self.cache["Z"]) * dA
+      
     dL_dA_prev = np.matmul(self.params["W"].transpose(), dL_dZ)
     
     self.grads["dA"] = dA

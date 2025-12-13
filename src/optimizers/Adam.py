@@ -20,6 +20,7 @@ class Adam(Optimizer):
     for layer in layers:
       for key in layer.params.keys():
         
+        
         m_key = f"{layer.name}_{key}"
         
         old_m1 = self.m1.get(m_key, np.zeros_like(layer.params[key]))
