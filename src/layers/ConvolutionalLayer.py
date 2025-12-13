@@ -40,7 +40,7 @@ class ConvolutionalLayer(Layer):
       self.kernel_size[1]
     ))
     
-    self.params["b"] = np.zeros((1, self.output_channels_dim))
+    self.params["b"] = np.zeros(self.output_channels_dim)
     self.grads["db"] = np.zeros((1, self.output_channels_dim))
     
     init_name = "he" if self.activation_name == "relu" else "xavier"
@@ -94,8 +94,9 @@ class ConvolutionalLayer(Layer):
                   Z_value += self.params["W"][out_c, in_c, kernel_x, kernel_y] * \
                              A_padded[b, in_c, in_x, in_y]
               
-              Z[b, out_c, out_x, out_y] = Z_value
-        Z[b, out_c, :, :] += self.params["b"][:, out_c]
+            Z[b, out_c, out_x, out_y] = Z_value
+        
+        Z[b, out_c, :, :] += self.params["b"][out_c]
               
     A = self.activation_fnc(Z)
         
@@ -105,10 +106,77 @@ class ConvolutionalLayer(Layer):
     return A
     
   def backward_pass(self, dA):
-    return super().backward_pass(dA)
+    
+    self.grads["dA"] = dA
+    self.grads["dZ"] = self.grads["dA"] * self.activation_derivative(self.cache["Z"])
+    self.grads["db"] = np.sum(self.grads["dZ"], axis=(0, 2, 3))
+    
+    # calculate gradient for W
+    
+    A_padded = np.pad(
+      array=self.cache["A_prev"],
+      pad_width=((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding))
+    )
+    
+    for c_out in range(self.params["W"].shape[0]):
+      for c_in in range(self.params["W"].shape[1]):
+        for kernel_x in range(self.params["W"].shape[2]):
+          for kernel_y in range(self.params["W"].shape[3]):
+            
+            dW = 0
+            
+            for b in range(self.cache["Z"].shape[0]):
+              for out_x in range(self.cache["Z"].shape[2]):
+                for out_y in range(self.cache["Z"].shape[3]):
+                  
+                  in_x = out_x * self.stride + kernel_x * self.dilation
+                  in_y = out_y * self.stride + kernel_y * self.dilation
+                  
+                  dW += self.grads["dZ"][b, c_out, out_x, out_y] * A_padded[b, c_in, in_x, in_y]
+            
+            self.grads["dW"][c_out, c_in, kernel_x, kernel_y] = dW
+            
+    dA_prev = np.zeros_like(self.cache["A_prev"])
+
+    dZ = self.grads["dZ"]  
+    W = self.params["W"]  
+    
+    K_H, K_W = self.kernel_size
+    B, C_out, H_out, W_out = dZ.shape
+    
+    s = self.stride
+    d = self.dilation
+    
+    for b in range(B):
+        for out_c in range(C_out):
+            for in_c in range(self.cache["A_prev"].shape[1]): 
+
+                for out_x in range(H_out):
+                    for out_y in range(W_out):
+                        
+                        dZ_val = dZ[b, out_c, out_x, out_y]
+
+                        for kernel_x in range(K_H):
+                            for kernel_y in range(K_W):
+
+                                W_val = W[out_c, in_c, kernel_x, kernel_y]
+                                
+                                in_x = out_x * s + kernel_x * d
+                                in_y = out_y * s + kernel_y * d
+                                
+                                H_in = self.cache["A_prev"].shape[2]
+                                W_in = self.cache["A_prev"].shape[3]
+                                
+                                if (in_x >= self.padding and in_x < H_in + self.padding and 
+                                    in_y >= self.padding and in_y < W_in + self.padding):
+                                    
+                                    target_in_x = in_x - self.padding
+                                    target_in_y = in_y - self.padding
+                                    
+                                    dA_prev[b, in_c, target_in_x, target_in_y] += dZ_val * W_val
+
+    return dA_prev
+              
     
     
     
-    
-    
-  
