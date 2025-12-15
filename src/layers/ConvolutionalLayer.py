@@ -1,25 +1,23 @@
 from src.layers import Layer
-from src.utils.activations import ActivationType, get_activation
 from src.utils.initialization import get_initialization
+from src.utils.activations import ActivationType
 import numpy as np
 
 class ConvolutionalLayer(Layer):
   def __init__(
     self,
     name: str,
-    activation_name: ActivationType,
     output_channels_dim: int,
+    next_act_layer: ActivationType,
     kernel_size: tuple = (3, 3),
     stride: int = 1,
     padding: int = 1,
-    dilation: int = 1
+    dilation: int = 1,
   ):
     super().__init__(name)
     
-    self.activation_name = activation_name
-    self.activation_fnc = get_activation(activation_name)[0]
-    self.activation_derivative = get_activation(activation_name)[1]
     self.output_channels_dim = output_channels_dim
+    self.next_act_layer = next_act_layer
     self.kernel_size = kernel_size
     self.stride = stride
     self.padding = padding
@@ -47,7 +45,7 @@ class ConvolutionalLayer(Layer):
     self.params["b"] = np.zeros(self.output_channels_dim)
     self.grads["db"] = np.zeros(self.output_channels_dim)
     
-    init_name = "he" if self.activation_name == "relu" else "xavier"
+    init_name = "he" if self.next_act_layer == "relu" else "xavier"
     initialize = get_initialization(init_name)
     
     for i in range(self.output_channels_dim):
@@ -112,17 +110,13 @@ class ConvolutionalLayer(Layer):
         
         Z[b, out_c, :, :] += self.params["b"][out_c]
               
-    A = self.activation_fnc(Z)
-        
     self.cache["A_prev"] = A_prev
-    self.cache["Z"] = Z
     
-    return A
+    return Z
     
-  def backward_pass(self, dA):
+  def backward_pass(self, dZ):
     
-    self.grads["dA"] = dA
-    self.grads["dZ"] = self.grads["dA"] * self.activation_derivative(self.cache["Z"])
+    self.grads["dZ"] = dZ
     self.grads["db"] = np.sum(self.grads["dZ"], axis=(0, 2, 3))
     
     # calculate gradient for W
@@ -139,9 +133,9 @@ class ConvolutionalLayer(Layer):
             
             dW = 0
             
-            for b in range(self.cache["Z"].shape[0]):
-              for out_x in range(self.cache["Z"].shape[2]):
-                for out_y in range(self.cache["Z"].shape[3]):
+            for b in range(dZ.shape[0]):
+              for out_x in range(dZ.shape[2]):
+                for out_y in range(dZ.shape[3]):
                   
                   in_x = out_x * self.stride + kernel_x * self.dilation
                   in_y = out_y * self.stride + kernel_y * self.dilation

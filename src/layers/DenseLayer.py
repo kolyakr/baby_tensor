@@ -4,22 +4,16 @@ from src.utils.activations import ActivationType, get_activation
 import numpy as np
 
 class DenseLayer(Layer):
-  def __init__(self, output_dim: int, activation_name: ActivationType, name: str = "Dense"):
+  def __init__(self, output_dim: int, next_act_layer: ActivationType, name: str = "Dense"):
     super().__init__(name)
     self.output_dim = output_dim
-    
-    if(activation_name not in ActivationType.__args__):
-      return ValueError(f"Activation name '{activation_name}' does not exist")
-    
-    self.activation_name = activation_name
-    self.activation_fnc = get_activation(activation_name)[0]
-    self.activation_derivative = get_activation(activation_name)[1]
+    self.next_act_layer = next_act_layer
     
     
   def initialize_parameters(self, input_dim: int, seed: int = 0):
     np.random.seed(seed)
     
-    init_name = "he" if self.activation_name == "relu" else "xavier"
+    init_name = "he" if self.next_act_layer == "relu" else "xavier"
     initialization = get_initialization(init_name)
     
     W_shape = (self.output_dim, input_dim)
@@ -34,32 +28,18 @@ class DenseLayer(Layer):
     return self.output_dim
     
   def forward_pass(self, A_prev):
-    Z = np.matmul(self.params["W"], A_prev) + np.matmul(self.params["b"], np.ones((1, A_prev.shape[1])))
-    A = self.activation_fnc(Z)
-    
-    self.cache["Z"] = Z
     self.cache["A_prev"] = A_prev
     
-    return A
+    Z = np.matmul(self.params["W"], A_prev) + np.matmul(self.params["b"], np.ones((1, A_prev.shape[1])))
     
-  def backward_pass(self, dA):
+    return Z
     
-    if self.activation_derivative is None:
-      dL_dZ = dA
-    else:    
-      dL_dZ = self.activation_derivative(self.cache["Z"]) * dA
+  def backward_pass(self, dZ):
       
-    dL_dA_prev = np.matmul(self.params["W"].transpose(), dL_dZ)
+    self.grads["dZ"] = dZ
+    self.grads["dW"] = np.matmul(dZ, self.cache["A_prev"].transpose())
+    self.grads["db"] = np.sum(dZ, axis=1, keepdims=True)
     
-    self.grads["dA"] = dA
-    self.grads["dZ"] = dL_dZ
+    dA_prev = np.matmul(self.params["W"].transpose(), dZ)
     
-    dL_dW = np.matmul(dL_dZ, self.cache["A_prev"].transpose())
-    dL_db = dL_dZ
-    
-    dL_db = np.sum(dL_db, axis=1, keepdims=True) # from broadcasted to normal bias size
-    
-    self.grads["dW"] = dL_dW
-    self.grads["db"] = dL_db
-    
-    return dL_dA_prev
+    return dA_prev
