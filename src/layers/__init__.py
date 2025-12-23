@@ -6,3 +6,5 @@ from .MaxPoolingLayer import MaxPoolingLayer
 from .ReLULayer import ReLULayer
 from .SoftmaxLayer import SoftmaxLayer
 from .SigmoidLayer import SigmoidLayer
+from .ResidualBlock import ResidualBlock
+from .BatchNormalizationLayer import BatchNormalizationLayer
